@@ -1,49 +1,23 @@
-// List of all known theme classes
-const knownThemes = [
-    "theme-minimal-light",
-    "theme-minimal-dark",
-    "theme-forest",
-    "theme-ocean",
-    "theme-sunrise",
-    "light-theme", // Keep old class names for cleanup if they were previously used
-    "dark-theme"   // Keep old class names for cleanup
-];
-
 /**
- * Applies the specified theme to the body and saves it to localStorage.
- * @param {string} themeName - The class name of the theme to apply (e.g., "theme-forest").
+ * Applies the single grayscale theme to the body.
  * @param {HTMLElement} body - The body element of the document.
- * @param {HTMLElement} [themeToggleButton] - The theme toggle button (optional, its text is no longer updated here).
- * @param {HTMLElement} [themeSelector] - The theme select dropdown (optional, used to set its value).
  */
-export function applyTheme(themeName, body, themeToggleButton, themeSelector) {
-    // Remove any existing theme classes
-    knownThemes.forEach(t => {
-        body.classList.remove(t);
+export function applyGrayscaleTheme(body) {
+    // Remove any pre-existing theme classes just in case (optional, but good for cleanup)
+    // This list could be manually maintained or dynamically generated if needed in other contexts.
+    // For this specific overhaul, we assume we want to clear out any of the previous multi-theme classes.
+    const oldThemes = [
+        "theme-minimal-light", "theme-minimal-dark", "theme-forest",
+        "theme-ocean", "theme-sunrise", "light-theme", "dark-theme"
+    ];
+    oldThemes.forEach(t => {
+        if (body.classList.contains(t)) {
+            body.classList.remove(t);
+        }
     });
 
-    // Add the new theme class
-    if (themeName) {
-        body.classList.add(themeName);
-        localStorage.setItem('theme', themeName);
-
-        // Update the selector to show the current theme if provided
-        if (themeSelector && themeSelector.value !== themeName) {
-            themeSelector.value = themeName;
-        }
-    } else {
-        console.warn("applyTheme called with no themeName. Applying default.");
-        // Fallback to a default if themeName is null or undefined
-        body.classList.add("theme-minimal-light"); 
-        localStorage.setItem('theme', "theme-minimal-light");
-        if (themeSelector) {
-            themeSelector.value = "theme-minimal-light";
-        }
-    }
-    
-    // The themeToggleButton's text is no longer updated here.
-    // That logic will be in main.js if the button is repurposed (e.g., to cycle themes).
+    // Apply the single, new grayscale theme class
+    body.classList.add("grayscale-theme");
+    console.log("Applied grayscale-theme to body."); // Log for confirmation
+    // No localStorage usage for a single, fixed theme.
 }
-
-// The old toggleTheme function is removed as theme selection is now handled by the dropdown
-// and potentially a new cycle function in main.js for the button.
