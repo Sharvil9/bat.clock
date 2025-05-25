@@ -1,0 +1,445 @@
+/* Basic Reset & Global Styles */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start; /* Start from top, allow scrolling for content */
+    min-height: 100vh;
+    padding: 20px 10px; /* Add some padding for smaller screens */
+    transition: background-color 0.5s, color 0.5s;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+/* Common Container Styles */
+.widget-container, 
+#digital-clock-wrapper .clock-container, /* Target existing digital clock container */
+.theme-selector-container {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: var(--container-bg-color);
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+    border: 1px solid var(--accent-color);
+    width: 90%;
+    max-width: 450px; /* Slightly increased max-width */
+}
+
+.widget-container h2 {
+    margin-top: 0;
+    margin-bottom: 15px; /* Space below header */
+    color: var(--text-color);
+    font-size: 1.7rem; /* Standardized header size */
+}
+
+/* Specific Overrides for existing .clock-container if needed */
+/* #digital-clock-wrapper .clock-container is already covered by .widget-container */
+
+/* Weather Widget Styles - now uses .widget-container */
+#weather-widget-container { /* This ID is still useful for JS hooks */
+    /* Inherits from .widget-container */
+}
+
+#weather-widget {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#city-input {
+    padding: 10px 15px; /* Consistent padding */
+    margin: 8px 5px; /* Consistent margin */
+    border: 1px solid transparent; /* Keep layout, color from bg */
+    border-radius: 6px; /* Slightly more rounded */
+    cursor: pointer;
+    font-size: 1rem;
+    font-family: inherit; /* Ensure font consistency */
+    background-color: var(--accent-color);
+    color: var(--container-bg-color); /* Text color that contrasts with accent */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: background-color 0.2s, opacity 0.2s, box-shadow 0.2s;
+}
+
+/* Standard Input Styles */
+input[type="text"], 
+select {
+    padding: 10px 12px; /* Consistent padding */
+    margin-bottom: 12px; /* Consistent margin */
+    border-radius: 6px;
+    border: 1px solid var(--accent-color);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-size: 1rem; /* Standardized font size */
+    font-family: inherit;
+    width: calc(100% - 24px);
+    max-width: 280px; /* Standard max-width for inputs */
+}
+
+input[type="text"]:focus,
+select:focus {
+    outline: none;
+    border-color: var(--accent-color); /* Ensure accent is visible on focus */
+    box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb, 0, 123, 255), 0.25); /* Use RGB version of accent for shadow */
+}
+
+/* Specific Button Styles (if any deviations needed) */
+#city-submit { /* Already covered by .app-button */
+    margin-bottom: 15px; /* Kept specific margin */
+}
+
+/* Standard Button Hover/Focus (applied to .app-button) */
+.app-button:hover {
+    opacity: 0.85;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+}
+.app-button:focus {
+    opacity: 0.85;
+    box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb, 0, 123, 255), 0.25), 0 3px 6px rgba(0,0,0,0.15);
+}
+.app-button:disabled {
+    background-color: #cccccc;
+    color: #666666;
+    cursor: not-allowed;
+    opacity: 0.6;
+    box-shadow: none;
+}
+
+#weather-location {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--text-color);
+    margin-bottom: 5px;
+}
+
+#weather-temp {
+    font-size: 2.5rem;
+    color: var(--time-font-color);
+    margin-bottom: 5px;
+}
+
+#weather-description {
+    font-size: 1.1rem;
+    color: var(--date-font-color);
+    margin-bottom: 10px;
+    text-transform: capitalize; /* Often descriptions are lowercase */
+}
+
+#weather-icon {
+    width: 50px; /* Adjust as needed */
+    height: 50px;
+    background-color: var(--accent-color); /* Placeholder background if icon fails */
+    border-radius: 50%;
+}
+
+.clock-container {
+    text-align: center;
+    /* Styling now primarily through .widget-container */
+}
+
+#time {
+    font-size: 3.5rem; /* Slightly larger time */
+    font-weight: bold;
+    color: var(--time-font-color);
+    letter-spacing: 1px; /* Added letter spacing */
+}
+
+#date {
+    font-size: 1.3rem; /* Slightly larger date */
+    color: var(--date-font-color);
+    margin-top: 5px; /* Space between time and date */
+}
+
+/* Theme Variables & Definitions */
+
+/* Default theme (Minimal Light) if no class is applied or for fallback */
+:root {
+    --background-color: #f4f7f6;
+    --text-color: #333333;
+    --accent-color: #007bff;
+    --container-bg-color: #ffffff;
+    --time-font-color: #2c3e50;
+    --date-font-color: #555555;
+    --accent-color-rgb: 0, 123, 255; /* For RGBA box shadow */
+}
+
+/* Theme-specific overrides using body classes */
+body.theme-minimal-light {
+    --background-color: #f4f7f6;
+    --text-color: #333333;
+    --accent-color: #007bff;
+    --accent-color-rgb: 0, 123, 255;
+    --container-bg-color: #ffffff;
+    --time-font-color: #2c3e50;
+    --date-font-color: #555555;
+}
+
+body.theme-minimal-dark {
+    --background-color: #2c3e50; 
+    --text-color: #ecf0f1;     
+    --accent-color: #3498db;     
+    --accent-color-rgb: 52, 152, 219;
+    --container-bg-color: #34495e; 
+    --time-font-color: #ecf0f1;
+    --date-font-color: #bdc3c7;   
+}
+
+body.theme-forest {
+    --background-color: #223A22; 
+    --text-color: #E8F5E9;    
+    --accent-color: #A0522D;    
+    --accent-color-rgb: 160, 82, 45;
+    --container-bg-color: #355E3B; 
+    --time-font-color: #D4E157;  
+    --date-font-color: #C5E1A5;   
+}
+
+body.theme-ocean {
+    --background-color: #0A2F51; 
+    --text-color: #E0F7FA;    
+    --accent-color: #FFC107;    
+    --accent-color-rgb: 255, 193, 7;
+    --container-bg-color: #1A5276; 
+    --time-font-color: #80DEEA;  
+    --date-font-color: #B2EBF2;   
+}
+
+body.theme-sunrise {
+    --background-color: #FFD180; 
+    --text-color: #4E342E;    
+    --accent-color: #FF7043;    
+    --accent-color-rgb: 255, 112, 67;
+    --container-bg-color: #FFE0B2; 
+    --time-font-color: #D84315;  
+    --date-font-color: #BF360C;   
+}
+
+/* Button and Selector General Styling */
+/* #theme-toggle, #view-toggle are now covered by .app-button */
+/* .theme-selector-container specific styles */
+.theme-selector-container { 
+    /* Inherits from .widget-container */
+    display: flex; /* Align label and select nicely */
+    flex-direction: column;
+    align-items: center;
+    gap: 8px; /* Space between label and select */
+}
+.theme-selector-container label {
+    margin-right: 0; /* Reset margin if any */
+    font-weight: bold;
+    color: var(--text-color);
+}
+/* select element already styled by global input[type="text"], select */
+
+
+/* Analog Clock Styles */
+#analog-clock-container {
+    /* Inherits from .widget-container, but needs specific size & shape */
+    width: 200px; 
+    height: 200px;
+    border-radius: 50%; /* Circular face */
+    position: relative; /* For positioning hands */
+    /* margin is handled by .widget-container centering if it's a direct child, or auto if standalone */
+}
+
+.hand {
+    width: 50%; /* Start from center */
+    height: 6px; /* Default height, will be overridden */
+    background-color: var(--text-color); /* Default hand color, can be theme-specific */
+    position: absolute;
+    top: 50%; /* Vertically center */
+    left: 0; /* Align to the left edge of the container */
+    transform-origin: 100% 50%; /* Rotate around the right-center point */
+    transform: translateY(-50%) rotate(90deg); /* Initial position (pointing up) and adjust for center origin */
+    border-radius: 3px; /* Rounded ends for hands */
+    transition: transform 0.05s cubic-bezier(0.4, 2.3, 0.6, 1); /* Smooth tick, especially for seconds */
+}
+
+.hour-hand {
+    width: 30%; /* Shorter, thicker */
+    height: 8px;
+    background-color: var(--text-color); /* Or a specific variable */
+    left: 20%; /* (50% - 30%) to align its base at center */
+    z-index: 1;
+}
+
+.minute-hand {
+    width: 40%; /* Medium length */
+    height: 6px;
+    background-color: var(--text-color);
+    left: 10%; /* (50% - 40%) */
+    z-index: 2;
+}
+
+.second-hand {
+    width: 45%; /* Longest, thinnest */
+    height: 2px;
+    background-color: var(--accent-color); 
+    left: 5%; 
+    z-index: 3;
+}
+
+.center-dot {
+    width: 12px;
+    height: 12px;
+    background-color: var(--accent-color);
+    border: 2px solid var(--container-bg-color); /* Contrast with container */
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4; 
+}
+
+/* Analog Clock Markings */
+#analog-clock-container::before, 
+#analog-clock-container::after,
+.marking { /* If using div markings */
+    content: ''; /* For pseudo-elements */
+    position: absolute;
+    background-color: var(--text-color); 
+}
+/* Main 12, 3, 6, 9 markings */
+#analog-clock-container::before { /* 12 and 6 */
+    width: 4px; height: 10%; 
+    left: calc(50% - 2px); top: 0;
+}
+#analog-clock-container::after { /* 3 and 9 */
+    width: 10%; height: 4px;
+    left: 0; top: calc(50% - 2px);
+}
+/* Optional: Additional div markings for other hours (would need JS to place them) */
+/* For now, keeping it simple with CSS pseudo-elements for main axes */
+
+
+/* Pomodoro Timer Styles - now uses .widget-container */
+#pomodoro-section-container { 
+    /* Inherits from .widget-container */
+}
+
+#pomodoro-timer-display {
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--time-font-color); 
+    margin: 10px 0;
+}
+
+#pomodoro-session-type {
+    font-size: 1.2rem;
+    color: var(--date-font-color); 
+    margin-bottom: 15px;
+    font-style: italic;
+}
+
+.pomodoro-controls { /* Container for pomodoro buttons */
+    display: flex;
+    justify-content: center;
+    gap: 10px; /* Space between buttons */
+    flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+}
+/* .pomodoro-controls button are covered by .app-button */
+
+
+#pomodoro-cycle-count-display {
+    margin-top: 15px;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    body {
+        padding: 15px 5px; /* Reduce padding on smaller screens */
+    }
+    .widget-container,
+    #digital-clock-wrapper .clock-container,
+    .theme-selector-container {
+        width: 95%;
+        padding: 15px;
+    }
+    #time {
+        font-size: 2.8rem; /* Slightly smaller time */
+    }
+    #date {
+        font-size: 1.1rem; /* Slightly smaller date */
+    }
+    #analog-clock-container {
+        width: 180px;
+        height: 180px;
+    }
+    #pomodoro-timer-display {
+        font-size: 2.5rem;
+    }
+    .widget-container h2 {
+        font-size: 1.5rem;
+    }
+    .app-button, 
+    input[type="text"], 
+    select {
+        font-size: 0.9rem; /* Slightly smaller text on controls */
+        padding: 8px 10px;
+    }
+    .pomodoro-controls {
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    #time {
+        font-size: 2.2rem;
+    }
+    #date {
+        font-size: 1rem;
+    }
+    #analog-clock-container {
+        width: 150px;
+        height: 150px;
+        border-width: 4px;
+    }
+    .hand {
+        border-radius: 2px;
+    }
+    .hour-hand { height: 6px; }
+    .minute-hand { height: 4px; }
+    .second-hand { height: 1px; }
+    .center-dot { width: 8px; height: 8px; border-width: 1px;}
+
+    #pomodoro-timer-display {
+        font-size: 2rem;
+    }
+    #weather-temp {
+        font-size: 2rem;
+    }
+    .widget-container h2 {
+        font-size: 1.3rem;
+    }
+     .app-button, 
+    input[type="text"], 
+    select {
+        font-size: 0.85rem;
+        padding: 7px 9px;
+    }
+    /* Ensure control groups stack nicely */
+    #controls-wrapper { /* Hypothetical wrapper for view/theme controls if needed */
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+    #view-toggle, #theme-toggle, .theme-selector-container {
+        width: 80%;
+        max-width: 250px; /* Ensure they don't get too wide */
+    }
+    .theme-selector-container select {
+         width: 100%; /* Make select full width of its container */
+    }
+}

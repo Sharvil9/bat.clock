@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BAT Clock</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+    <link rel="icon" href="favicon.png" type="image/png"> <!-- Alternative PNG favicon -->
+</head>
+<body> <!-- Removed default theme class -->
+    <div id="digital-clock-wrapper">
+        <div class="clock-container"> <!-- Existing container, now part of digital view -->
+            <div id="time">12:00:00 AM</div>
+            <div id="date">January 1, 2024</div>
+        </div>
+    </div>
+
+    <div id="analog-clock-container" class="clock-face" style="display: none;">
+        <!-- Hour markings can be added here later or via CSS -->
+        <div class="hand hour-hand" id="hour-hand"></div>
+        <div class="hand minute-hand" id="minute-hand"></div>
+        <div class="hand second-hand" id="second-hand"></div>
+        <div class="center-dot"></div>
+    </div>
+
+    <button id="view-toggle">Switch to Analog</button>
+    <button id="theme-toggle">Cycle Theme</button>
+
+    <div class="theme-selector-container">
+        <label for="theme-selector">Select Theme:</label>
+        <select id="theme-selector">
+            <option value="theme-minimal-light">Minimal Light</option>
+            <option value="theme-minimal-dark">Minimal Dark</option>
+            <option value="theme-forest">Forest</option>
+            <option value="theme-ocean">Ocean</option>
+            <option value="theme-sunrise">Sunrise</option>
+        </select>
+    </div>
+
+    <script src="js/main.js" type="module"></script>
+
+    <div id="pomodoro-section-container">
+        <h2>Pomodoro Timer</h2>
+        <div id="pomodoro-timer-display">25:00</div>
+        <div id="pomodoro-session-type">Work</div>
+        <div class="pomodoro-controls">
+            <button id="pomodoro-start">Start</button>
+            <button id="pomodoro-pause" disabled>Pause</button>
+            <button id="pomodoro-reset">Reset</button>
+        </div>
+        <div id="pomodoro-cycle-count-display">Cycles: 0</div>
+    </div>
+
+    <div id="weather-widget-container">
+        <h2>Weather</h2>
+        <div id="weather-widget">
+            <input type="text" id="city-input" placeholder="Enter city name">
+            <button id="city-submit">Get Weather</button>
+            <div id="weather-location">Enter a city to see the weather.</div>
+            <div id="weather-temp">--°C</div>
+            <div id="weather-description">-----</div>
+            <img id="weather-icon" src="" alt="Weather icon" style="display: none;">
+        </div>
+    </div>
+</body>
+</html>
