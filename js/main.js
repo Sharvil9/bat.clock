@@ -1,132 +1,166 @@
-console.log("js/main.js script loading..."); // Top-level diagnostic log
+console.log("js/main.js script loading (Casio-Style Overhaul)...");
 
-import { updateClock } from './clock.js'; 
-// import { updateAnalogClock } from './analogClock.js'; // PHASE 1: Commented out
-import { applyGrayscaleTheme } from './theme.js'; // PHASE 1: Changed to applyGrayscaleTheme
-// import { initPomodoro } from './pomodoro.js'; // PHASE 1: Commented out
-import { initWeather } from './weather.js';   
+import { updateClock, formatClockDate, getDayOfWeek } from './clock.js';
+import { applyGrayscaleTheme } from './theme.js';
+import { initWeather } from './weather.js';
+import * as UIModeManager from './uiModes.js';
+// WorldClock module is used by uiModes.js, so no direct import needed here unless for specific calls
 
-// DOM Elements
-const timeDisplay = document.getElementById('time'); 
-const dateDisplay = document.getElementById('date'); 
-const digitalClockWrapper = document.getElementById('digital-clock-wrapper'); 
-
-// PHASE 1: Comment out Analog Clock DOM Elements
-// const analogClockContainer = document.getElementById('analog-clock-container');
-// const hourHand = document.getElementById('hour-hand');
-// const minuteHand = document.getElementById('minute-hand');
-// const secondHand = document.getElementById('second-hand');
-
-// PHASE 1: Comment out Theme Controls (buttons/selectors are removed from HTML)
-// const themeToggleButton = document.getElementById('theme-toggle'); 
-// const themeSelector = document.getElementById('theme-selector');   
-// const viewToggleButton = document.getElementById('view-toggle'); 
-
+// --- DOM Elements (New Layout) ---
 const body = document.body;
-// PHASE 1: knownThemes and currentView are no longer needed for simplified theme/view
-// const knownThemes = themeModuleKnownThemes; 
-// let currentView = 'digital'; 
+const timeElement = document.getElementById('time');
+const amPmElement = document.getElementById('ampm');
+const dateElement = document.getElementById('date');
+const dayOfWeekElement = document.getElementById('day-of-week');
 
-// PHASE 1: setView function is commented out as analog clock and view toggle are hidden
-// function setView(viewName) { ... }
+const modeIndicatorElement = document.getElementById('mode-indicator');
+const primaryContentElement = document.getElementById('primary-content');
+const secondaryContentElement = document.getElementById('secondary-content');
+const modeButton = document.getElementById('mode-button');
 
-// Main Initialization
+const weatherTempCompactElement = document.getElementById('weather-temp-compact');
+const weatherIconCompactElement = document.getElementById('weather-icon-compact');
+
+// --- Main Update Function (Called every second) ---
+function refreshDisplayOnInterval() {
+    const currentMode = UIModeManager.getCurrentMode();
+
+    // Always update day of week as it's in the top info bar
+    const now = new Date();
+    if (dayOfWeekElement) dayOfWeekElement.textContent = getDayOfWeek(now);
+
+    if (currentMode === UIModeManager.MODES.TIME) {
+        refreshLocalTimeDisplay();
+    } else if (currentMode === UIModeManager.MODES.WORLD_CLOCK) {
+        // Re-render world clock data using the function in uiModes.js
+        // This ensures it uses the latest time.
+        UIModeManager.updateDisplayForMode(UIModeManager.MODES.WORLD_CLOCK, {
+            primaryContent: primaryContentElement,
+            secondaryContent: secondaryContentElement,
+            modeIndicator: modeIndicatorElement
+            // No need to pass time/date elements here as they are not used by WORLD_CLOCK mode
+        });
+    }
+    // Settings mode doesn't need per-second updates by default
+}
+
+
+// --- Specific Display Refresh Functions ---
+function refreshLocalTimeDisplay() {
+    const now = new Date();
+    const is24Hour = UIModeManager.getHourFormat();
+    const timeParts = updateClock(now, null, null, true, is24Hour);
+
+    if (timeElement) {
+        if (timeElement.parentElement !== primaryContentElement) {
+            primaryContentElement.innerHTML = '';
+            primaryContentElement.appendChild(timeElement);
+        }
+        timeElement.childNodes[0].nodeValue = `${timeParts.hours}:${timeParts.minutes}:${timeParts.seconds} `;
+    }
+    if (amPmElement) {
+        amPmElement.textContent = timeParts.ampm;
+        amPmElement.style.display = timeParts.ampm ? 'inline' : 'none';
+    }
+    if (dateElement) {
+        if (dateElement.parentElement !== secondaryContentElement) {
+            secondaryContentElement.innerHTML = '';
+            secondaryContentElement.appendChild(dateElement);
+        }
+        dateElement.textContent = formatClockDate(now, true);
+    }
+}
+
+
+// --- Mode Management ---
+let hourFormatToggleElement = null;
+
+function handleHourFormatToggle() {
+    UIModeManager.toggleHourFormat();
+    if (UIModeManager.getCurrentMode() === UIModeManager.MODES.SETTINGS) {
+        UIModeManager.updateDisplayForMode(UIModeManager.MODES.SETTINGS, {
+             primaryContent: primaryContentElement,
+             secondaryContent: secondaryContentElement,
+             modeIndicator: modeIndicatorElement
+        });
+        attachSettingsListeners();
+    }
+    // If in TIME or WORLD_CLOCK mode, the next interval tick will pick up the new format.
+    // Or, force an immediate refresh if desired:
+    refreshDisplayOnInterval();
+}
+
+function attachSettingsListeners() {
+    hourFormatToggleElement = document.getElementById('hour-format-toggle');
+    if (hourFormatToggleElement) {
+        hourFormatToggleElement.removeEventListener('click', handleHourFormatToggle);
+        hourFormatToggleElement.addEventListener('click', handleHourFormatToggle);
+
+        hourFormatToggleElement.removeEventListener('keydown', handleHourFormatKeyboardToggle);
+        hourFormatToggleElement.addEventListener('keydown', handleHourFormatKeyboardToggle);
+    }
+}
+
+function handleHourFormatKeyboardToggle(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault(); // Prevent scrolling if space is pressed
+        handleHourFormatToggle();
+    }
+}
+
+function handleModeChange() {
+    const newMode = UIModeManager.cycleMode();
+    applyModeToUI(newMode);
+}
+
+function applyModeToUI(mode) {
+    UIModeManager.updateDisplayForMode(mode, {
+        primaryContent: primaryContentElement,
+        secondaryContent: secondaryContentElement,
+        modeIndicator: modeIndicatorElement,
+        timeElement: timeElement,
+        dateElement: dateElement
+    });
+
+    // Trigger immediate refresh of content for the new mode
+    refreshDisplayOnInterval();
+
+    if (mode === UIModeManager.MODES.SETTINGS) {
+        attachSettingsListeners();
+    }
+}
+
+// --- Main Initialization ---
 function init() {
-    console.log("Entering init() function (UI Overhaul Phase 1)..."); // Message updated
+    console.log("Initializing Bat Clock (Casio-Style Overhaul)...");
 
-    if (timeDisplay) {
-        timeDisplay.style.fontSize = ""; // Reset any diagnostic styling
-    }
-    if (dateDisplay) { 
-        dateDisplay.style.display = 'block'; 
-    }
-    
-    // PHASE 1: Ensure Pomodoro, Analog Clock, View Toggle button are hidden (already done in HTML for some, JS ensures for others)
-    const pomodoroContainer = document.getElementById('pomodoro-section-container');
-    if (pomodoroContainer) {
-        pomodoroContainer.style.display = 'none'; 
-    }
-    const analogClockContainer = document.getElementById('analog-clock-container');
-    if (analogClockContainer) {
-        analogClockContainer.style.display = 'none';
-    }
-    const viewToggleButton = document.getElementById('view-toggle');
-    if(viewToggleButton) {
-        viewToggleButton.style.display = 'none'; 
-    }
-    // Make Weather section visible (it should be by default if not explicitly hidden by CSS)
-    const weatherContainer = document.getElementById('weather-widget-container');
-    if (weatherContainer) {
-        weatherContainer.style.display = 'block'; 
-    }
-
-
-    if (!body) {
-        console.error("Error: Document body not found.");
+    if (!body || !timeElement || !dateElement || !modeButton || !primaryContentElement || !secondaryContentElement || !modeIndicatorElement || !amPmElement || !dayOfWeekElement) {
+        console.error("One or more critical UI elements for the new layout are missing. Initialization aborted.");
         return;
     }
 
-    // PHASE 1: Simplified Theme initialization
-    applyGrayscaleTheme(body); // Apply the single grayscale theme
+    applyGrayscaleTheme(body);
+    const initialMode = UIModeManager.loadInitialMode();
+    applyModeToUI(initialMode); // This will also call refreshDisplayOnInterval once
 
-    // PHASE 1: View initialization commented out
-    // const savedView = localStorage.getItem('clockView');
-    // if (savedView === 'analog' || savedView === 'digital') {
-    //     setView(savedView); 
-    // } else {
-    //     setView('digital'); 
-    // }
+    modeButton.addEventListener('click', handleModeChange);
 
-    // PHASE 1: Theme control event listeners and callbacks removed/commented out
-    // function handleThemeSelection(event) { ... }
-    // function cycleTheme() { ... }
-    // function toggleView() { ... }
+    setInterval(refreshDisplayOnInterval, 1000); // Main interval updates based on current mode
 
-    // if (themeSelector) { ... }
-    // if (themeToggleButton) { ... }
-    // if (viewToggleButton) { ... }
-    
-    // Global clock update interval (Digital Clock only for Phase 1)
-    if (timeDisplay && dateDisplay && digitalClockWrapper) { 
-        // Ensure digital clock wrapper is visible (it should be default)
-        digitalClockWrapper.style.display = 'block'; 
-        updateClock(timeDisplay, dateDisplay); // Initial call
-        setInterval(() => {
-            // No need to check currentView, only digital clock is active
-            if (digitalClockWrapper.style.display !== 'none') { 
-                updateClock(timeDisplay, dateDisplay);
-            }
-        }, 1000);
-    } else {
-        console.error("Digital clock display elements not found for init or interval.");
-    }
-
-
-    // PHASE 1: Pomodoro Timer Initialization commented out
-    // console.log("Initializing Pomodoro timer..."); 
-    // const pomodoroTimerDisplayElement = ...
-    // if (pomodoroTimerDisplayElement && ...) { initPomodoro({...}); } 
-    // else { console.warn("Pomodoro DOM elements not found..."); }
-
-    // Weather Widget Initialization (KEEP)
-    console.log("Initializing Weather widget..."); 
-    const weatherLocationDisplay = document.getElementById('weather-location');
-    const weatherTempDisplay = document.getElementById('weather-temp');
-    const weatherDescriptionDisplay = document.getElementById('weather-description');
-    const weatherIconDisplay = document.getElementById('weather-icon');
-
-    if (weatherLocationDisplay && weatherTempDisplay && weatherDescriptionDisplay && weatherIconDisplay) {
+    console.log("Initializing Compact Weather widget...");
+    if (weatherTempCompactElement && weatherIconCompactElement) {
         initWeather({
-            locationDisplay: weatherLocationDisplay,
-            tempDisplay: weatherTempDisplay,
-            descriptionDisplay: weatherDescriptionDisplay,
-            iconDisplay: weatherIconDisplay
+            tempDisplay: weatherTempCompactElement,
+            iconDisplay: weatherIconCompactElement,
+            locationDisplay: null,
+            descriptionDisplay: null,
+            isCompact: true
         });
     } else {
-        console.warn("One or more Weather Widget display DOM elements were not found. Weather widget not initialized.");
+        console.warn("Compact weather display elements not found. Weather widget not fully initialized for compact view.");
     }
     
-    console.log("Main init() function completed successfully (UI Overhaul Phase 1)."); 
+    console.log("Bat Clock (Casio-Style Overhaul) initialized successfully.");
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -1,135 +1,115 @@
+// js/weather.js
+
 // --- Constants & Configuration ---
 const API_KEY = 'e40951f785b14f5880361537252505'; // User-provided API key
 const WEATHER_API_URL = 'https://api.openweathermap.org/data/2.5/weather';
 const ICON_URL_PREFIX = 'https://openweathermap.org/img/wn/';
 const IP_GEOLOCATION_URL = 'https://ipapi.co/json/';
 
-// --- DOM Elements (to be set by initWeather) ---
-let locationDisplayElem = null;
-let tempDisplayElem = null;
-let descriptionDisplayElem = null;
-let iconDisplayElem = null;
-// cityInputElement and citySubmitButton are no longer needed
+// --- DOM Elements (passed via config) ---
+// These will hold the elements passed in the config object for the current instance.
+let currentConfig = {};
 
 // --- Helper Functions ---
-function updateWeatherDisplay(data) {
-    console.log("Weather Widget: Updating display with data:", data);
-    if (!data || !data.weather || !data.weather[0]) {
-        if (locationDisplayElem) locationDisplayElem.textContent = 'Weather data unavailable.';
-        if (tempDisplayElem) tempDisplayElem.textContent = '--°C';
-        if (descriptionDisplayElem) descriptionDisplayElem.textContent = 'Could not fetch data.';
-        if (iconDisplayElem) {
-            iconDisplayElem.src = ''; // Clear src to trigger opacity: 0 via CSS
-            iconDisplayElem.alt = 'Weather icon';
-            // No longer setting display: none; CSS handles visibility via opacity based on [src=""]
-        }
-        return;
+function displayWeatherError(message) {
+    console.warn("Weather display error:", message);
+    if (currentConfig.tempDisplay) {
+        currentConfig.tempDisplay.textContent = currentConfig.isCompact ? 'ERR' : '--°C';
     }
-
-    if (locationDisplayElem) locationDisplayElem.textContent = data.name || 'Current Location'; // data.name comes from OpenWeatherMap
-    if (tempDisplayElem) tempDisplayElem.textContent = `${Math.round(data.main.temp)}°C`;
-    if (descriptionDisplayElem) descriptionDisplayElem.textContent = data.weather[0].description;
-    if (iconDisplayElem) {
-        iconDisplayElem.alt = data.weather[0].description;
-        iconDisplayElem.src = `${ICON_URL_PREFIX}${data.weather[0].icon}@2x.png`; // Setting src will trigger opacity transition via CSS
-        // No longer setting display: block;
+    if (currentConfig.iconDisplay) {
+        currentConfig.iconDisplay.src = '';
+        currentConfig.iconDisplay.alt = currentConfig.isCompact ? '' : 'Error';
+    }
+    // For non-compact mode, more detailed errors can be shown
+    if (!currentConfig.isCompact) {
+        if (currentConfig.locationDisplay) currentConfig.locationDisplay.textContent = 'Weather Error';
+        if (currentConfig.descriptionDisplay) currentConfig.descriptionDisplay.textContent = message;
     }
 }
 
-async function fetchWeatherDataByCity(cityName) {
-    console.log(`Weather Widget: Fetching weather data for city: ${cityName} using OpenWeatherMap.`);
-    if (locationDisplayElem) locationDisplayElem.textContent = 'Loading weather...';
-    if (iconDisplayElem) iconDisplayElem.src = ''; // Clear src to hide icon via opacity during loading
+function updateWeatherDisplay(data) {
+    console.log("Weather Widget: Updating display with data:", data);
+    if (!data || !data.weather || !data.weather[0] || !data.main) {
+        displayWeatherError(currentConfig.isCompact ? 'Data?' : 'Weather data unavailable.');
+        return;
+    }
 
-    const url = `${WEATHER_API_URL}?q=${encodeURIComponent(cityName)}&appid=${API_KEY}&units=metric`;
+    if (currentConfig.tempDisplay) {
+        currentConfig.tempDisplay.textContent = `${Math.round(data.main.temp)}°C`;
+    }
+    if (currentConfig.iconDisplay) {
+        currentConfig.iconDisplay.alt = data.weather[0].description; // Alt text is good for accessibility
+        currentConfig.iconDisplay.src = `${ICON_URL_PREFIX}${data.weather[0].icon}.png`; // Use smaller icon for compact
+    }
+
+    // Non-compact elements (only update if they exist in config)
+    if (!currentConfig.isCompact) {
+        if (currentConfig.locationDisplay) {
+            currentConfig.locationDisplay.textContent = data.name || 'Current Location';
+        }
+        if (currentConfig.descriptionDisplay) {
+            currentConfig.descriptionDisplay.textContent = data.weather[0].description;
+        }
+    }
+}
+
+async function fetchWeatherData(url, isGeoLookup = false) {
+    // Initial text for compact display (very minimal)
+    if (currentConfig.isCompact && currentConfig.tempDisplay) {
+        currentConfig.tempDisplay.textContent = '...';
+    }
+    if (currentConfig.iconDisplay) currentConfig.iconDisplay.src = '';
+
 
     try {
         const response = await fetch(url);
         if (!response.ok) {
-            if (response.status === 401) throw new Error("Invalid OpenWeatherMap API key.");
-            if (response.status === 404) throw new Error(`City "${cityName}" not found by OpenWeatherMap.`);
-            throw new Error(`OpenWeatherMap API Error: ${response.status} ${response.statusText}`);
+            if (response.status === 401) throw new Error("API Key Invalid"); // Compact error message
+            if (response.status === 404 && !isGeoLookup) throw new Error("City Not Found");
+            throw new Error(`API Err ${response.status}`); // Generic compact error
         }
         const data = await response.json();
-        updateWeatherDisplay(data);
-    } catch (error) {
-        console.error("Error fetching weather data from OpenWeatherMap:", error);
-        if (locationDisplayElem) locationDisplayElem.textContent = 'Weather Error';
-        if (tempDisplayElem) tempDisplayElem.textContent = '--°C';
-        if (descriptionDisplayElem) descriptionDisplayElem.textContent = error.message || 'Could not fetch weather.';
-        if (iconDisplayElem) iconDisplayElem.src = ''; // Clear src on error
-    }
-}
 
-async function fetchWeatherByIP() {
-    console.log("Weather Widget: Fetching IP geolocation data from ipapi.co...");
-    if (locationDisplayElem) locationDisplayElem.textContent = 'Determining location...';
-    if (iconDisplayElem) iconDisplayElem.src = ''; // Clear src to hide icon via opacity during loading
-
-    try {
-        const response = await fetch(IP_GEOLOCATION_URL);
-        if (!response.ok) {
-            throw new Error(`IP Geolocation API Error: ${response.status} ${response.statusText}`);
-        }
-        const geoData = await response.json();
-        console.log("Weather Widget: Successfully received geolocation data:", geoData);
-
-        if (geoData && geoData.city) {
-            // Now fetch weather using the city from geolocation
-            fetchWeatherDataByCity(geoData.city);
-        } else if (geoData && geoData.latitude && geoData.longitude) {
-            // Fallback to lat/lon if city is not available
-            console.log(`Weather Widget: Geolocation found Lat: ${geoData.latitude}, Lon: ${geoData.longitude}. Fetching weather by coordinates.`);
-            const lat = geoData.latitude;
-            const lon = geoData.longitude;
-            const url = `${WEATHER_API_URL}?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
-            
-            if (locationDisplayElem) locationDisplayElem.textContent = 'Loading weather...';
-            const weatherResponse = await fetch(url);
-            if (!weatherResponse.ok) {
-                 if (weatherResponse.status === 401) throw new Error("Invalid OpenWeatherMap API key.");
-                throw new Error(`OpenWeatherMap API Error (coords): ${weatherResponse.status} ${weatherResponse.statusText}`);
+        if (isGeoLookup) { // This was a geolocation call
+            console.log("Weather Widget: Successfully received geolocation data:", data);
+            if (data && data.city) {
+                const weatherFetchUrl = `${WEATHER_API_URL}?q=${encodeURIComponent(data.city)}&appid=${API_KEY}&units=metric`;
+                fetchWeatherData(weatherFetchUrl, false); // Now fetch weather for this city
+            } else if (data && data.latitude && data.longitude) {
+                const weatherFetchUrl = `${WEATHER_API_URL}?lat=${data.latitude}&lon=${data.longitude}&appid=${API_KEY}&units=metric`;
+                fetchWeatherData(weatherFetchUrl, false); // Fetch weather by coords
+            } else {
+                throw new Error("No City/Coords");
             }
-            const weatherData = await weatherResponse.json();
-            updateWeatherDisplay(weatherData);
-
-        } else {
-            throw new Error("Could not determine city or coordinates from IP geolocation data.");
+        } else { // This was a weather data call
+            updateWeatherDisplay(data);
         }
     } catch (error) {
-        console.error("Error with IP geolocation or subsequent weather fetch:", error);
-        if (locationDisplayElem) locationDisplayElem.textContent = 'Location Error';
-        if (tempDisplayElem) tempDisplayElem.textContent = '--°C';
-        if (descriptionDisplayElem) descriptionDisplayElem.textContent = error.message || 'Could not get weather.';
-        if (iconDisplayElem) iconDisplayElem.src = ''; // Clear src on error
+        console.error("Error in fetchWeatherData:", error.message);
+        displayWeatherError(error.message || (currentConfig.isCompact ? 'ERR' : 'Fetch Failed'));
     }
 }
-
 
 // --- Public API ---
 export function initWeather(config) {
     console.log("Weather Widget: Initializing with config:", config);
-    // Store DOM elements from config
-    locationDisplayElem = config.locationDisplay;
-    tempDisplayElem = config.tempDisplay;
-    descriptionDisplayElem = config.descriptionDisplay;
-    iconDisplayElem = config.iconDisplay;
-    // cityInputElement and citySubmitButton are no longer part of config
+    currentConfig = config; // Store the passed config
 
-    if (!locationDisplayElem || !tempDisplayElem || !descriptionDisplayElem || !iconDisplayElem) {
-        console.error("Weather widget display elements not correctly provided to initWeather.");
+    // Validate essential elements based on mode (compact or full)
+    if (!currentConfig.tempDisplay || !currentConfig.iconDisplay) {
+        console.error("Weather widget critical display elements (temp or icon) not correctly provided to initWeather. Aborting.");
         return;
     }
+    if (!currentConfig.isCompact && (!currentConfig.locationDisplay || !currentConfig.descriptionDisplay)) {
+         console.warn("Weather widget running in non-compact mode, but location or description display elements are missing.");
+    }
     
-    if (API_KEY === 'YOUR_API_KEY' || !API_KEY) { // Check if API key is still placeholder or empty
-         console.error("Weather Widget: CRITICAL - API_KEY is a placeholder or missing. Please replace it with your actual OpenWeatherMap API key in js/weather.js.");
-         if (locationDisplayElem) locationDisplayElem.textContent = "API Key Error";
-         if (descriptionDisplayElem) descriptionDisplayElem.textContent = "Setup Required";
-         if (tempDisplayElem) tempDisplayElem.textContent = "--°C";
-         if (iconDisplayElem) iconDisplayElem.src = ''; // Clear src to hide
-         return; // Stop initialization if API key is not set
+    if (API_KEY === 'YOUR_API_KEY' || !API_KEY) {
+         console.error("Weather Widget: CRITICAL - API_KEY is a placeholder or missing.");
+         displayWeatherError(currentConfig.isCompact ? 'No Key' : "API Key Error: Setup Required");
+         return;
     }
 
-    // Fetch weather based on IP geolocation on load
-    fetchWeatherByIP();
+    // Fetch weather: Start with IP Geolocation
+    fetchWeatherData(IP_GEOLOCATION_URL, true);
 }
